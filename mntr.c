@@ -75,7 +75,7 @@ void pid_to_name(const pid_t pid, char cmd[PATH_MAX]);
 
 unsigned nprocs();
 void calc_usg(void *_usg);
-void calc_usgd(const pid_t ppid, mn_t **mns, int *m, int *n, const double shm, FILE *fp);
+void calc_usgd(const pid_t ppid, mn_t **mns, int *m, int *n, const double shm, FILE *fp, const char* xcmd);
 
 long size_of(const char *fn);
 char *get_now(void);
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 			{
 				if ((kill(pid, 0) == -1 && errno == ESRCH))
 					break;
-				calc_usgd(pid, mns, &m, &n, shm, fp);
+				calc_usgd(pid, mns, &m, &n, shm, fp, NULL);
 				sleep(2);
 			}
 			fclose(fp);
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
 						break;
 					else
 					{
-						calc_usgd(pid, mns, &m, &n, shm, fp);
+						calc_usgd(pid, mns, &m, &n, shm, fp, argv[1]);
 						sleep(2);
 					}
 				}
@@ -512,7 +512,7 @@ void calc_usg(void *_usg)
 	usg->cpu = !(rl + rc) ? up + idle : 0;
 }
 
-void calc_usgd(const pid_t ppid, mn_t **mns, int *m, int *n, const double shm, FILE *fp)
+void calc_usgd(const pid_t ppid, mn_t **mns, int *m, int *n, const double shm, FILE *fp, const char* xcmd)
 {
 	int i, j;
 	kv_t kv;
@@ -567,7 +567,11 @@ void calc_usgd(const pid_t ppid, mn_t **mns, int *m, int *n, const double shm, F
 	strftime(buf, sizeof(buf), "%x %X", localtime(&_now));
 	if (strlen(cmds))
 	{
-		fprintf(fp, "%s\t%f\t%f\t%.3f\t%s\n", buf, fmax(0, rss), shr, cpu > nprocs() * 100 ? 100 : cpu, cmds);
+        if(xcmd){
+            fprintf(fp, "%s\t%f\t%f\t%.3f\t%s\n", buf, fmax(0, rss), shr, cpu > nprocs() * 100 ? 100 : cpu, xcmd);
+        }else{
+            fprintf(fp, "%s\t%f\t%f\t%.3f\t%s\n", buf, fmax(0, rss), shr, cpu > nprocs() * 100 ? 100 : cpu, cmds);
+        }
 		mn_t *mn = calloc(1, sizeof(mn_t));
 		mn->ts = atot(buf);
 		mn->rss = fmax(0, rss);
